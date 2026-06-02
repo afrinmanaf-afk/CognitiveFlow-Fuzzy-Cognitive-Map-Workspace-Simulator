@@ -1,0 +1,23 @@
+{
+  "name": "cognitiveflow",
+  "version": "1.0.0",
+  "description": "Fuzzy Cognitive Map Workspace and Simulator",
+  "main": "app.js",
+  "scripts": {
+    "start": "npx -y http-server . -p 8080"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "http-server": "^14.1.1"
+  },
+  "keywords": [
+    "fuzzy-cognitive-map",
+    "simulation",
+    "systems-thinking",
+    "causal-modeling",
+    "canvas",
+    "graph"
+  ],
+  "author": "Antigravity",
+  "license": "MIT"
+}

@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CognitiveFlow: Fuzzy Cognitive Map Workspace & Simulator</title>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Main Stylesheet -->
+    <link rel="stylesheet" href="style.css">
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <!-- App Layout -->
+    <div class="app-container">
+        <!-- Top Navigation Bar -->
+        <header class="app-header">
+            <div class="header-logo">
+                <i class="fa-solid fa-circle-nodes logo-icon"></i>
+                <div class="logo-text">
+                    <h1>CognitiveFlow</h1>
+                    <span>Fuzzy Cognitive Map Workspace</span>
+                </div>
+            </div>
+            <div class="header-actions">
+                <button id="btn-presets" class="btn btn-secondary">
+                    <i class="fa-solid fa-list-check"></i> Load Preset
+                </button>
+                <button id="btn-import-export" class="btn btn-secondary">
+                    <i class="fa-solid fa-file-export"></i> Import / Export
+                </button>
+                <button id="btn-clear-workspace" class="btn btn-danger">
+                    <i class="fa-solid fa-trash-can"></i> Clear
+                </button>
+                <div class="divider"></div>
+                <button id="btn-guide" class="btn btn-info">
+                    <i class="fa-solid fa-circle-question"></i> Guide
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Body Workspace -->
+        <main class="app-main">
+            <!-- Left Toolbar & Node/Link Property Editor Panel -->
+            <aside class="panel left-panel">
+                <!-- Section 1: Selected Element Inspector -->
+                <div class="panel-section inspector-section">
+                    <h2 class="section-title"><i class="fa-solid fa-sliders"></i> Property Inspector</h2>
+                    
+                    <!-- Fallback: Empty Selection State -->
+                    <div id="inspector-empty" class="inspector-state active">
+                        <i class="fa-solid fa-arrow-pointer empty-icon"></i>
+                        <p>Select a concept node or relationship edge, or double-click on the canvas grid to create a new concept.</p>
+                    </div>
+
+                    <!-- Inspector State: Concept Selected -->
+                    <div id="inspector-concept" class="inspector-state">
+                        <div class="inspector-header">
+                            <span class="badge badge-node">Concept</span>
+                            <span class="element-id" id="ins-node-id">concept_1</span>
+                        </div>
+                        <div class="input-group">
+                            <label for="ins-node-name">Concept Name</label>
+                            <input type="text" id="ins-node-name" maxlength="32">
+                        </div>
+                        <div class="input-group">
+                            <div class="label-with-value">
+                                <label for="ins-node-init">Initial Value</label>
+                                <span class="range-val" id="ins-node-init-val">0.50</span>
+                            </div>
+                            <input type="range" id="ins-node-init" min="0" max="1" step="0.01" value="0.5">
+                        </div>
+                        <div class="input-group">
+                            <label for="ins-node-function">Transfer Function</label>
+                            <select id="ins-node-function">
+                                <option value="sigmoid">Sigmoid [0, 1]</option>
+                                <option value="bipolar">Bipolar Sigmoid [-1, 1]</option>
+                                <option value="linear">Linear Clamped</option>
+                                <option value="threshold">Binary Threshold</option>
+                            </select>
+                        </div>
+                        <div class="input-group">
+                            <label for="ins-node-desc">Notes / Description</label>
+                            <textarea id="ins-node-desc" rows="2" placeholder="Describe this system factor..."></textarea>
+                        </div>
+                        <button id="btn-delete-node" class="btn btn-block btn-danger">
+                            <i class="fa-solid fa-trash"></i> Delete Concept
+                        </button>
+                    </div>
+
+                    <!-- Inspector State: Edge Selected -->
+                    <div id="inspector-edge" class="inspector-state">
+                        <div class="inspector-header">
+                            <span class="badge badge-edge">Causal Link</span>
+                        </div>
+                        <div class="link-flow-labels">
+                            <div class="concept-bubble" id="ins-edge-source">Source</div>
+                            <i class="fa-solid fa-right-long flow-arrow"></i>
+                            <div class="concept-bubble" id="ins-edge-target">Target</div>
+                        </div>
+                        <div class="input-group">
+                            <div class="label-with-value">
+                                <label for="ins-edge-weight">Causal Influence (Weight)</label>
+                                <span class="range-val" id="ins-edge-weight-val">0.50</span>
+                            </div>
+                            <input type="range" id="ins-edge-weight" min="-1" max="1" step="0.05" value="0.5">
+                            <div class="weight-guide">
+                                <span>-1.0 (Strong Negative)</span>
+                                <span>+1.0 (Strong Positive)</span>
+                            </div>
+                        </div>
+                        <div class="input-group">
+                            <label for="ins-edge-desc">Causal Mechanism</label>
+                            <textarea id="ins-edge-desc" rows="3" placeholder="Explain the relationship dynamics..."></textarea>
+                        </div>
+                        <button id="btn-delete-edge" class="btn btn-block btn-danger">
+                            <i class="fa-solid fa-trash"></i> Delete Causal Link
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Section 2: Mathematical Simulation Configurations -->
+                <div class="panel-section simulation-config">
+                    <h2 class="section-title"><i class="fa-solid fa-gears"></i> Engine Configurations</h2>
+                    <div class="input-group row-group">
+                        <div class="col-6">
+                            <label for="sim-model">Equation Model</label>
+                            <select id="sim-model">
+                                <option value="modified">Modified Kosko</option>
+                                <option value="kosko">Standard Kosko</option>
+                            </select>
+                        </div>
+                        <div class="col-6">
+                            <div class="label-with-value">
+                                <label for="sim-lambda">Sigmoid &lambda;</label>
+                                <span class="range-val" id="sim-lambda-val">1.0</span>
+                            </div>
+                            <input type="range" id="sim-lambda" min="0.1" max="3.0" step="0.1" value="1.0">
+                        </div>
+                    </div>
+                    <div class="input-group row-group">
+                        <div class="col-6">
+                            <label for="sim-threshold">Threshold &theta;</label>
+                            <input type="number" id="sim-threshold" min="0" max="1" step="0.1" value="0.5">
+                        </div>
+                        <div class="col-6">
+                            <label for="sim-epsilon">Convergence &epsilon;</label>
+                            <input type="number" id="sim-epsilon" min="0.00001" max="0.01" step="0.0001" value="0.0001">
+                        </div>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- Center Visual Grid Network Canvas -->
+            <div class="canvas-container">
+                <!-- SVG Canvas Viewport -->
+                <svg id="fcm-canvas" width="100%" height="100%">
+                    <!-- Nodes & Links Layer inside (Rendered by JS) -->
+                </svg>
+
+                <!-- Floating Canvas Overlay Controls -->
+                <div class="canvas-controls">
+                    <div class="control-group">
+                        <button id="btn-physics-toggle" class="btn btn-circle" title="Toggle Auto-Layout Physics">
+                            <i class="fa-solid fa-wind"></i>
+                        </button>
+                        <button id="btn-auto-layout" class="btn btn-circle" title="Settle Layout Instantly">
+                            <i class="fa-solid fa-compress"></i>
+                        </button>
+                        <button id="btn-zoom-in" class="btn btn-circle" title="Zoom In"><i class="fa-solid fa-plus"></i></button>
+                        <button id="btn-zoom-out" class="btn btn-circle" title="Zoom Out"><i class="fa-solid fa-minus"></i></button>
+                        <button id="btn-zoom-reset" class="btn btn-circle" title="Reset Camera"><i class="fa-solid fa-crosshairs"></i></button>
+                    </div>
+                    
+                    <div class="tip-banner">
+                        <i class="fa-solid fa-lightbulb text-warning"></i>
+                        <span>Double-click empty grid to create node. Click-drag node outer top handle to draw links. Shift-drag canvas to pan.</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Visual Analytics Panel -->
+            <aside class="panel right-panel">
+                <!-- Section 1: Simulation Run Controller -->
+                <div class="panel-section sim-runner">
+                    <h2 class="section-title"><i class="fa-solid fa-circle-play"></i> Simulation Controls</h2>
+                    
+                    <div class="sim-status-indicator" id="sim-status-box">
+                        <div class="status-badge" id="sim-status-badge">Idle</div>
+                        <div class="status-msg" id="sim-status-msg">FCM is ready for computation.</div>
+                    </div>
+
+                    <div class="sim-btn-row">
+                        <button id="btn-sim-play" class="btn btn-primary btn-grow">
+                            <i class="fa-solid fa-play"></i> Run Simulation
+                        </button>
+                        <button id="btn-sim-step" class="btn btn-secondary" title="Iterate Single Step">
+                            <i class="fa-solid fa-forward-step"></i> Step
+                        </button>
+                        <button id="btn-sim-reset" class="btn btn-secondary" title="Reset to Initial Values">
+                            <i class="fa-solid fa-arrow-rotate-left"></i> Reset
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Section 2: Trajectory Chart Visualizations -->
+                <div class="panel-section chart-section">
+                    <div class="chart-tab-row">
+                        <button id="tab-btn-line" class="tab-btn active">Activation Lines</button>
+                        <button id="tab-btn-compare" class="tab-btn">Scenario Comparisons</button>
+                    </div>
+                    
+                    <!-- Line Chart Visualizer -->
+                    <div class="chart-canvas-wrapper active" id="chart-wrapper-line">
+                        <canvas id="trajectory-line-chart"></canvas>
+                    </div>
+
+                    <!-- Scenario Bar Chart Visualizer -->
+                    <div class="chart-canvas-wrapper" id="chart-wrapper-compare">
+                        <canvas id="scenario-bar-chart"></canvas>
+                    </div>
+
+                    <!-- Scenario Action Row -->
+                    <div class="scenario-actions">
+                        <input type="text" id="scenario-name" placeholder="Scenario name..." maxlength="16">
+                        <button id="btn-save-scenario" class="btn btn-accent">
+                            <i class="fa-solid fa-floppy-disk"></i> Snapshot Scenario
+                        </button>
+                    </div>
+                    <div class="saved-scenarios-list" id="scenarios-container">
+                        <!-- Tiny badges representing stored scenario benchmarks -->
+                    </div>
+                </div>
+
+                <!-- Section 3: Concept Grid Value Table -->
+                <div class="panel-section table-section">
+                    <h2 class="section-title"><i class="fa-solid fa-table"></i> Value Output Matrix</h2>
+                    <div class="table-container">
+                        <table class="data-table" id="matrix-table">
+                            <thead>
+                                <tr>
+                                    <th>Concept</th>
+                                    <th>Initial</th>
+                                    <th>Stable State</th>
+                                    <th>Delta</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- JS-generated list of current states -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </aside>
+        </main>
+    </div>
+
+    <!-- MODAL 1: Presets Selection Modal -->
+    <div class="modal-overlay" id="modal-presets">
+        <div class="modal-box glassmorphic max-w-lg">
+            <div class="modal-header">
+                <h2><i class="fa-solid fa-list-check"></i> Choose Preset Model</h2>
+                <button class="modal-close btn-close-modal"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="modal-body">
+                <p class="modal-desc">Loading a preset will replace your current map workspace. Select from the vetted models below:</p>
+                
+                <div class="preset-cards">
+                    <!-- Preset Card 1 -->
+                    <div class="preset-card" data-preset="eco">
+                        <div class="preset-icon"><i class="fa-solid fa-seedling"></i></div>
+                        <div class="preset-details">
+                            <h3>Socio-Ecological Sustainability</h3>
+                            <p>Simulate interactions between Forest Conservation, Deforestation, Eco-Tourism, Local Employment, and Soil/Water quality.</p>
+                        </div>
+                    </div>
+
+                    <!-- Preset Card 2 -->
+                    <div class="preset-card" data-preset="traffic">
+                        <div class="preset-icon"><i class="fa-solid fa-bus"></i></div>
+                        <div class="preset-details">
+                            <h3>Smart City Traffic Congestion</h3>
+                            <p>Model the trade-offs of Public Transportation Quality, City Budget, Road Congestion, Emissions/Air Quality, and Car Ownership.</p>
+                        </div>
+                    </div>
+
+                    <!-- Preset Card 3 -->
+                    <div class="preset-card" data-preset="business">
+                        <div class="preset-icon"><i class="fa-solid fa-chart-line"></i></div>
+                        <div class="preset-details">
+                            <h3>Marketing & Corporate Strategy</h3>
+                            <p>Model dependencies between Marketing Spend, Brand Trust, Product Quality, Customer Complaints, and Sales Revenue.</p>
+                        </div>
+                    </div>
+
+                    <!-- Preset Card 4 -->
+                    <div class="preset-card" data-preset="health">
+                        <div class="preset-icon"><i class="fa-solid fa-heart-pulse"></i></div>
+                        <div class="preset-details">
+                            <h3>Personal Stress & Burnout</h3>
+                            <p>Analyze how Workload, Stress Levels, Sleep Quality, Daily Productivity, and Physical Exercise balance under pressure.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 2: Import / Export Modal -->
+    <div class="modal-overlay" id="modal-ie">
+        <div class="modal-box glassmorphic max-w-lg">
+            <div class="modal-header">
+                <h2><i class="fa-solid fa-file-export"></i> Import / Export Map JSON</h2>
+                <button class="modal-close btn-close-modal"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="modal-body">
+                <p class="modal-desc">Copy the JSON configuration below to share your map, or paste a valid JSON file to reconstruct a workspace.</p>
+                <textarea id="ie-json-textarea" rows="10" placeholder="Paste your CognitiveFlow JSON here..."></textarea>
+                
+                <div class="ie-action-row">
+                    <button id="btn-ie-import" class="btn btn-primary"><i class="fa-solid fa-file-import"></i> Load Map JSON</button>
+                    <button id="btn-ie-copy" class="btn btn-secondary"><i class="fa-solid fa-copy"></i> Copy to Clipboard</button>
+                    <div class="file-upload-wrapper">
+                        <button class="btn btn-secondary"><i class="fa-solid fa-upload"></i> Upload .json</button>
+                        <input type="file" id="ie-file-input" accept=".json">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 3: Educational Guide Modal -->
+    <div class="modal-overlay" id="modal-guide">
+        <div class="modal-box glassmorphic max-w-xl">
+            <div class="modal-header">
+                <h2><i class="fa-solid fa-circle-info"></i> Fuzzy Cognitive Map Theory Guide</h2>
+                <button class="modal-close btn-close-modal"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="modal-body markdown-style scroll-y" style="max-height: 480px;">
+                <h3>What is a Fuzzy Cognitive Map (FCM)?</h3>
+                <p>Introduced by Bart Kosko in 1986, Fuzzy Cognitive Maps are soft-computing causal models used to describe, simulate, and analyze complex systems of interconnected factors. They function like an artificial neural network with customizable activation pathways.</p>
+                
+                <h3>Key Concepts</h3>
+                <ul>
+                    <li><strong>Concept Nodes ($A_i$)</strong>: System elements (e.g. "Public Transit Quality", "Stress Level"). Each node has an activation value between <code>0.0</code> and <code>1.0</code> (or <code>-1.0</code> and <code>+1.0</code> in Bipolar models) representing its magnitude or level of occurrence.</li>
+                    <li><strong>Directed Edges ($W_{ji}$)</strong>: Direct causal connections showing how concept $j$ influences concept $i$. The weight $W_{ji}$ falls in the range <code>[-1.0, 1.0]</code>:
+                        <ul>
+                            <li><strong class="text-success">$W_{ji} > 0$ (Positive Causality)</strong>: An increase in Concept $j$ causes an increase in Concept $i$.</li>
+                            <li><strong class="text-danger">$W_{ji} < 0$ (Negative Causality)</strong>: An increase in Concept $j$ causes a decrease in Concept $i$.</li>
+                        </ul>
+                    </li>
+                </ul>
+
+                <h3>Simulation Math</h3>
+                <p>During a simulation, concept values update over discrete iterations using either:</p>
+                <ol>
+                    <li><strong>Standard Kosko</strong>: $A_i(t+1) = f(\sum A_j(t) \cdot W_{ji})$</li>
+                    <li><strong>Modified Kosko</strong>: $A_i(t+1) = f(\sum A_j(t) \cdot W_{ji} + A_i(t))$ <em>(Includes the concept's historical memory to avoid fading values)</em></li>
+                </ol>
+
+                <p>The transfer function $f(x)$ bounds the outputs. We support:</p>
+                <ul>
+                    <li><strong>Sigmoid</strong>: Compresses values into <code>[0.0, 1.0]</code>. Ideal for strictly positive concepts.</li>
+                    <li><strong>Bipolar Sigmoid</strong>: Compresses values into <code>[-1.0, 1.0]</code>. Perfect for concepts that can be fully negative (e.g., negative budget).</li>
+                    <li><strong>Linear Clamped</strong>: Standard linear mapping bounded strictly by system borders.</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Logic Script (Loaded as ES Module) -->
+    <script type="module" src="app.js"></script>
+</body>
+</html>
